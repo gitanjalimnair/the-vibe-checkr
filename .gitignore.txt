@@ -1,0 +1,15 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Next.js build output
+/.next/
+/out/
+
+# Environment variables
+.env
+.env.local
+
+# Vercel deployment
+.vercel/
