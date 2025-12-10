@@ -1,95 +1,102 @@
-// pages/api/palette.js
+// NOTE: Using 'require' syntax because the file extension is .cjs
 
 const { GoogleGenAI } = require('@google/genai');
 
-// --- THIS IS YOUR GOLDEN PROMPT (System Instruction) ---
-// It enforces the persona, multimodal analysis, and JSON output structure.
+// Initialize the Gemini client using the environment variable
+const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
+
+// Define the GOLDEN PROMPT content
 const GOLDEN_PROMPT = `
-You are 'Chromatica,' a highly-regarded, experimental makeup artist and AI stylist specializing in emotional color theory. Your sole purpose is to analyze a user's uploaded image and their single-keyword 'Mood Vibe' to generate a hyper-specific, multi-product makeup palette.
+You are Chromatica, the world's most innovative AI stylist specializing in creating bespoke makeup palettes. Your task is to analyze the user's uploaded image (for skin tone, lighting, and style) and the user's desired 'Vibe' keyword to generate a cohesive makeup palette.
 
-### 1. Analysis and Persona Constraints
-* Persona: Maintain a knowledgeable, creative, and slightly poetic tone.
-* Input Analysis: First, analyze the user's image to determine the approximate **skin undertone** (warm, cool, neutral) and current **hair/eye color**. This is crucial for recommending flattering shades.
-* Vibe Translation: Interpret the user's single keyword 'Mood Vibe' (e.g., 'Mysterious,' 'Electric,' 'Cozy') and translate it into a core color story, texture (matte, shimmer, metallic), and intensity level.
+RULES:
+1. Multimodal Analysis: Use the image to determine the user's underlying skin undertone (warm, cool, or neutral).
+2. Persona: The output MUST be in the voice of a confident, high-end stylist.
+3. Structured Output: The final result MUST be a valid JSON object matching the requested schema. Do not include any text outside of the JSON block.
 
-### 2. Output Requirements (Strictly follow this JSON format)
-Your entire output MUST be a single JSON object. Do not include any conversational text, introductions, or explanations outside of the designated fields.
-
+SCHEMA REQUESTED:
 {
-    "Stylist_Notes": "A brief, 2-sentence poetic description of how the palette captures the user's Mood Vibe and complements their features.",
-    "User_Undertone": "[Report the detected undertone here (Warm, Cool, or Neutral)]",
-    "Palette_Items": [
-        {
-            "Product_Type": "Eyeshadow Duo",
-            "Vibe_Color": "[Name of the primary eyeshadow color (e.g., Midnight Plum)]",
-            "Hex_Code": "[Primary shadow's HTML hex code]",
-            "Texture": "[e.g., Matte, Glitter, Metallic, Satin]",
-            "Application_Tip": "Focus color on the outer corner of the eye and blend into the crease."
-        },
-        {
-            "Product_Type": "Lip Stain",
-            "Vibe_Color": "[Name of the lip shade (e.g., Burnt Sienna)]",
-            "Hex_Code": "[Lip product's HTML hex code]",
-            "Texture": "[e.g., Sheer, Velour, Glossy]",
-            "Application_Tip": "Blot lightly for a blurred, soft-focus finish."
-        },
-        {
-            "Product_Type": "Cheek Color (Blush/Highlight)",
-            "Vibe_Color": "[Name of the cheek shade (e.g., Dust Rose)]",
-            "Hex_Code": "[Cheek product's HTML hex code]",
-            "Texture": "[e.g., Cream, Powder Highlight]",
-            "Application_Tip": "Apply high on the cheekbone and sweep up towards the temple."
-        }
-    ]
+  "Stylist_Notes": "A creative summary explaining the palette choice.",
+  "User_Undertone": "The detected skin undertone (Warm, Cool, or Neutral).",
+  "Palette_Items": [
+    {
+      "Product_Type": "Foundation, Blush, Lipstick, Eyeshadow, or Highlight",
+      "Vibe_Color": "A creative name for the color.",
+      "Hex_Code": "#FFFFFF",
+      "Application_Tip": "A professional application tip for this product."
+    },
+    // ... total of 3 to 5 items ...
+  ]
 }
-
-### 3. Safety and Constraint
-* Safety: Never comment on the user's weight, age, attractiveness, or flaws. Focus exclusively on technical features like undertone, color, and shape.
-* Constancy: Always provide exactly **three** items in the Palette_Items list: an Eyeshadow Duo, a Lip Stain, and a Cheek Color.
 `;
 
-// Initializes the Gemini Client, securely reading the GEMINI_API_KEY from Vercel's Environment Variables
-const ai = new GoogleGenAI({});
-
+// Use module.exports for .cjs file extension
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    const { imageBase64, moodVibe } = req.body;
-
-    if (!imageBase64 || !moodVibe) {
-        return res.status(400).json({ message: 'Missing image or moodVibe in request.' });
-    }
-
     try {
-        // 1. Prepare Multimodal Content: combines text (mood) and image (base64)
-        const parts = [
-            { text: `Mood Vibe: ${moodVibe}` },
+        const { imageBase64, moodVibe } = req.body;
+
+        if (!imageBase64 || !moodVibe) {
+            return res.status(400).json({ message: 'Missing image or mood vibe.' });
+        }
+        
+        // 1. Structure the prompt parts correctly for multimodal input
+        const promptParts = [
+            { text: GOLDEN_PROMPT + `\n\nUser Vibe/Mood: ${moodVibe}` },
             { 
-                inlineData: { 
-                    mimeType: 'image/jpeg', 
-                    data: imageBase64 
+                inlineData: {
+                    data: imageBase64,
+                    // Sending the image data as a PNG or JPEG MIME type is critical
+                    mimeType: 'image/jpeg' 
                 }
-            }
+            },
         ];
 
-        // 2. Call Gemini API
+        // 2. Call the Gemini Model
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash', 
-            contents: [{ role: 'user', parts: parts }],
+            contents: promptParts,
             config: {
-                systemInstruction: GOLDEN_PROMPT,
-                responseMimeType: 'application/json' 
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "object",
+                    properties: {
+                        Stylist_Notes: { type: "string", description: "A creative summary." },
+                        User_Undertone: { type: "string", description: "The detected skin undertone." },
+                        Palette_Items: { 
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    Product_Type: { type: "string" },
+                                    Vibe_Color: { type: "string" },
+                                    Hex_Code: { type: "string" },
+                                    Application_Tip: { type: "string" }
+                                },
+                                required: ["Product_Type", "Vibe_Color", "Hex_Code", "Application_Tip"]
+                            }
+                        }
+                    },
+                    required: ["Stylist_Notes", "User_Undertone", "Palette_Items"]
+                }
             }
         });
 
-        // Parse and return the structured JSON output
-        res.status(200).json(JSON.parse(response.text));
+        // 3. Parse the result and send it back to the frontend
+        const jsonText = response.text.trim();
+        const palette = JSON.parse(jsonText);
+
+        res.status(200).json(palette);
 
     } catch (error) {
-        console.error('Gemini API Error:', error);
-        // Return a generic error to the user
-        res.status(500).json({ message: 'AI Generation Failed.', error: error.message });
+        // Log the error and return a clean, descriptive message
+        console.error('Gemini API Error:', error.message);
+        // This is the message the user will see on the site
+        res.status(500).json({ 
+            message: `AI Generation Failed. Please check Vercel logs for API key errors, or try a smaller image (under 4MB). Error: ${error.message}`
+        });
     }
-}
+};
