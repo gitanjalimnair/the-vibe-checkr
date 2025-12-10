@@ -1,6 +1,6 @@
 // pages/api/palette.js
 
-import { GoogleGenAI } from '@google/genai';
+const { GoogleGenAI } = require('@google/genai');
 
 // --- THIS IS YOUR GOLDEN PROMPT (System Instruction) ---
 // It enforces the persona, multimodal analysis, and JSON output structure.
@@ -51,7 +51,7 @@ Your entire output MUST be a single JSON object. Do not include any conversation
 // Initializes the Gemini Client, securely reading the GEMINI_API_KEY from Vercel's Environment Variables
 const ai = new GoogleGenAI({});
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
