@@ -1,13 +1,12 @@
-// pages/index.js
 import { useState, useRef } from 'react';
 
-// Function to convert the uploaded file into a Base64 string
+// CORRECTED: Function signature fixed to resolve last error
 const fileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     // Crucial: Only get the Base64 data part after the comma
-    reader.onload = () => resolve(reader.result.split(',')[1]); 
+    reader.onload = () => resolve(reader.result.split(',')[1]);
     reader.onerror = (error) => reject(error);
   });
 };
@@ -47,7 +46,6 @@ export default function VibeCheckr() {
       });
 
       if (!response.ok) {
-        // If the server returns an error code (400, 500, etc.)
         const errorData = await response.json();
         throw new Error(errorData.message || 'API request failed. Check Vercel logs.');
       }
@@ -77,7 +75,7 @@ export default function VibeCheckr() {
             accept="image/*" 
             ref={fileInputRef} 
             disabled={loading}
-            style={styles.fileInput}
+            style={{ ...styles.textInput, ...styles.fileInput }} 
           />
         </div>
 
@@ -106,7 +104,7 @@ export default function VibeCheckr() {
           <h2 style={styles.resultTitle}>Vibe Result: {moodVibe.toUpperCase()}</h2>
           <p style={styles.notes}>**Chromatica's Notes:** {paletteResult.Stylist_Notes}</p>
           <p style={styles.undertone}>**Detected Undertone:** {paletteResult.User_Undertone}</p>
-          
+
           <div style={styles.paletteGrid}>
             {paletteResult.Palette_Items.map((item, index) => (
               <div key={index} style={styles.paletteItem}>
@@ -116,7 +114,7 @@ export default function VibeCheckr() {
                     backgroundColor: item.Hex_Code
                   }}
                 ></div>
-                <p style={styles.productType}>**{item.Product_Type}**</p>
+                <p style={styles.productType}>{item.Product_Type}</p>
                 <p style={styles.colorName}>{item.Vibe_Color} ({item.Hex_Code})</p>
                 <p style={styles.tip}>*Tip:* {item.Application_Tip}</p>
               </div>
@@ -128,26 +126,36 @@ export default function VibeCheckr() {
   );
 }
 
-// Basic Inline Styles
+// *** PROFESSIONAL INLINE STYLES ***
 const styles = {
-  container: { maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' },
-  title: { textAlign: 'center', color: '#8A2BE2' },
-  subtitle: { textAlign: 'center', color: '#6A5ACD', marginBottom: '30px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '20px', border: '1px solid #ddd', padding: '20px', borderRadius: '8px' },
+  container: { maxWidth: '900px', margin: '30px auto', padding: '30px', boxShadow: '0 8px 16px rgba(0, 0, 0, 0.15)', borderRadius: '15px', backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' },
+  title: { textAlign: 'center', color: '#6A1B9A', borderBottom: '3px solid #E0BEEB', paddingBottom: '15px', marginBottom: '20px' },
+  subtitle: { textAlign: 'center', color: '#4A148C', marginBottom: '35px', fontStyle: 'italic', fontSize: '1.1em' },
+  form: { display: 'flex', flexDirection: 'column', gap: '25px', padding: '30px', borderRadius: '10px', backgroundColor: '#F9F9F9', border: '1px solid #EEE' },
   inputGroup: { display: 'flex', flexDirection: 'column' },
-  label: { fontWeight: 'bold', marginBottom: '5px', color: '#4B0082' },
-  textInput: { padding: '10px', borderRadius: '4px', border: '1px solid #ccc' },
-  fileInput: { padding: '10px', border: '1px solid #ccc', borderRadius: '4px' },
-  button: { padding: '12px', backgroundColor: '#FF69B4', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '16px', marginTop: '10px' },
-  error: { color: 'red', textAlign: 'center', marginTop: '15px' },
-  resultContainer: { marginTop: '40px', padding: '20px', border: '2px solid #FF69B4', borderRadius: '8px', backgroundColor: '#FFF0F5' },
-  resultTitle: { color: '#8A2BE2', borderBottom: '2px solid #FFC0CB', paddingBottom: '10px' },
-  notes: { fontStyle: 'italic', marginTop: '10px' },
-  undertone: { fontWeight: 'bold' },
-  paletteGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginTop: '20px' },
-  paletteItem: { textAlign: 'center', padding: '10px', border: '1px dashed #FFC0CB', borderRadius: '6px' },
-  colorSwatch: { width: '100%', height: '80px', borderRadius: '4px', marginBottom: '10px', border: '1px solid #333' },
-  productType: { fontWeight: 'bold', fontSize: '1.1em' },
-  colorName: { color: '#4B0082', fontSize: '0.9em' },
-  tip: { fontStyle: 'italic', fontSize: '0.8em', marginTop: '5px' },
+  label: { fontWeight: 'bold', marginBottom: '8px', color: '#4A148C', fontSize: '1.05em' },
+  textInput: { padding: '12px', borderRadius: '6px', border: '1px solid #CCC', fontSize: '16px' },
+  fileInput: { padding: '12px', border: '1px solid #CCC' },
+  button: { 
+    padding: '15px', 
+    backgroundColor: '#9C27B0', // Medium Purple
+    color: 'white', 
+    border: 'none', 
+    borderRadius: '8px', 
+    cursor: 'pointer', 
+    fontSize: '17px', 
+    marginTop: '15px', 
+    transition: 'background-color 0.3s' 
+  },
+  error: { color: '#B71C1C', textAlign: 'center', marginTop: '20px', padding: '10px', backgroundColor: '#FFEBEE', border: '1px solid #B71C1C', borderRadius: '4px' },
+  resultContainer: { marginTop: '50px', padding: '30px', border: '3px solid #9C27B0', borderRadius: '15px', backgroundColor: '#F3E5F5' },
+  resultTitle: { color: '#6A1B9A', borderBottom: '2px solid #9C27B0', paddingBottom: '10px', marginBottom: '20px' },
+  notes: { fontStyle: 'italic', marginTop: '15px', marginBottom: '10px', lineHeight: '1.4' },
+  undertone: { fontWeight: 'bold', fontSize: '1.1em', marginBottom: '25px', color: '#4A148C' },
+  paletteGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '25px', marginTop: '20px' },
+  paletteItem: { textAlign: 'center', padding: '15px', border: '1px solid #E0BEEB', borderRadius: '8px', backgroundColor: '#FFFFFF', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)' },
+  colorSwatch: { width: '100%', height: '100px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #333' },
+  productType: { fontWeight: 'bold', fontSize: '1.15em', color: '#4A148C' },
+  colorName: { color: '#6A1B9A', fontSize: '0.95em', margin: '5px 0' },
+  tip: { fontStyle: 'italic', fontSize: '0.85em', marginTop: '8px', color: '#757575' },
 };
